@@ -1,57 +1,46 @@
-'use strict';
+var moment = require('moment');
 
-var path = process.cwd();
-var ClickHandler = require(path + '/app/controllers/clickHandler.server.js');
+module.exports = function (app) {
+    app.route('/')
+        .get(function (req, res) {
+            res.sendFile(process.cwd() + '/public/index.html');
+        });
+    
+    app.get('/:time', function(request, response){
+    	
+    	//initialize unix and natural to null
+    	var unix = null;
+    	var natural = null;
+    	
+    	//pull the time from the url
+    	var time = request.params.time;
 
-module.exports = function (app, passport) {
-
-	function isLoggedIn (req, res, next) {
-		if (req.isAuthenticated()) {
-			return next();
-		} else {
-			res.redirect('/login');
-		}
-	}
-
-	var clickHandler = new ClickHandler();
-
-	app.route('/')
-		.get(isLoggedIn, function (req, res) {
-			res.sendFile(path + '/public/index.html');
-		});
-
-	app.route('/login')
-		.get(function (req, res) {
-			res.sendFile(path + '/public/login.html');
-		});
-
-	app.route('/logout')
-		.get(function (req, res) {
-			req.logout();
-			res.redirect('/login');
-		});
-
-	app.route('/profile')
-		.get(isLoggedIn, function (req, res) {
-			res.sendFile(path + '/public/profile.html');
-		});
-
-	app.route('/api/:id')
-		.get(isLoggedIn, function (req, res) {
-			res.json(req.user.github);
-		});
-
-	app.route('/auth/github')
-		.get(passport.authenticate('github'));
-
-	app.route('/auth/github/callback')
-		.get(passport.authenticate('github', {
-			successRedirect: '/',
-			failureRedirect: '/login'
-		}));
-
-	app.route('/api/:id/clicks')
-		.get(isLoggedIn, clickHandler.getClicks)
-		.post(isLoggedIn, clickHandler.addClick)
-		.delete(isLoggedIn, clickHandler.resetClicks);
+		//check if it is a number - if so, treat as a unix timestamp
+    	if (!isNaN(time)){
+    		var momentTime = moment(time, 'x');
+    		
+    		//format the timestamp into unix and natural and save the values
+    		unix = momentTime.format('x');
+    		natural = momentTime.format("MMMM D, YYYY");
+    	}
+    	
+    	//otherwise, treat as a natural date and format and save the values
+    	else {
+    		//moment(time) parses quite a lot of strings into valid dates - was not sure how precise to be so left general
+    		var momentTime = moment(time);
+    		if (momentTime.isValid()){
+    			unix = unix = momentTime.format('x');
+    			natural = momentTime.format("MMMM D, YYYY");
+    		};
+    	}
+    	//construct an object out of the values to send as response
+    	var responseObj = {
+    		unix: unix,
+    		natural: natural
+    	}
+    	
+    	response.send(responseObj);
+    	
+    });
+    
 };
