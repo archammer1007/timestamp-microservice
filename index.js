@@ -18,12 +18,33 @@ app.get("/", function (req, res) {
   res.sendFile(__dirname + '/views/index.html');
 });
 
-
 // your first API endpoint... 
 app.get("/api/hello", function (req, res) {
   res.json({greeting: 'hello API'});
 });
 
+//if /api is called with nothing after, return the current date and time
+app.get("/api/", function(req, res){
+  var now = Date.now();
+  var nowUTC = new Date(now).toUTCString();
+  res.json({ unix: now, utc: nowUTC })
+})
+
+app.get("/api/:date?", function(req, res){
+    let date = req.params.date;
+    //check if valid date string
+    if (!isNaN(new Date(date))){
+      res.json({ unix: Date.parse(new Date(date)), utc: new Date(date).toUTCString() });
+    }
+    //check if unix code (ie is a number)
+    else if (!isNaN(date)){
+      res.json({ unix: Number(date), utc: new Date(Number(date)).toUTCString() });
+    }
+    //if is neither, give error
+    else {
+      res.json({ error: "Invalid Date" })
+    }
+})
 
 
 // Listen on port set in environment variable or default to 3000
